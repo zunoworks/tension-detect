@@ -72,6 +72,12 @@ def parse_rules(text: str) -> list[Rule]:
     Skips: code blocks, inline code, shell commands, paths, URLs.
     Minimum rule length: 10 chars (after cleaning).
     """
+    # Strip YAML frontmatter (--- ... ---)
+    if text.startswith("---"):
+        end = text.find("\n---", 3)
+        if end != -1:
+            text = text[end + 4:]
+
     lines = text.splitlines()
     rules: list[Rule] = []
     current_scope = ""
@@ -103,13 +109,19 @@ def parse_rules(text: str) -> list[Rule]:
         if in_code_block:
             continue
 
+        # Skip table rows
+        if stripped.startswith("|"):
+            _flush_paragraph()
+            continue
+
         heading_m = re.match(r"^(#{1,4})\s+(.+)$", stripped)
         if heading_m:
             _flush_paragraph()
             current_scope = heading_m.group(2).strip()
             continue
 
-        bullet_m = re.match(r"^[-*]\s+(.+)$", stripped)
+        # Bullet: - or * followed by space. Exclude ** (bold marker)
+        bullet_m = re.match(r"^[-*]\s+(.+)$", stripped) if not stripped.startswith("**") else None
         if bullet_m:
             _flush_paragraph()
             _add_rule(bullet_m.group(1).strip())

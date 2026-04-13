@@ -19,6 +19,7 @@ from .formatter import format_tensions_for_injection, inject_into_text
 
 # Security: allowed file extensions for read/write operations
 _ALLOWED_EXTENSIONS = {".md", ".txt", ".cursorrules", ".rules", ".yaml", ".yml"}
+_ALLOWED_FILENAMES = {".cursorrules", "RULES", "rules"}
 
 
 def _validate_file_path(file_path: str) -> tuple[Path | None, str | None]:
@@ -34,16 +35,15 @@ def _validate_file_path(file_path: str) -> tuple[Path | None, str | None]:
 
     path = raw.resolve()
 
-    if path.suffix.lower() not in _ALLOWED_EXTENSIONS:
-        allowed = ", ".join(sorted(_ALLOWED_EXTENSIONS))
-        return None, f"File type '{path.suffix}' not allowed. Allowed: {allowed}"
+    if path.name not in _ALLOWED_FILENAMES and path.suffix.lower() not in _ALLOWED_EXTENSIONS:
+        allowed = ", ".join(sorted(_ALLOWED_EXTENSIONS | _ALLOWED_FILENAMES))
+        return None, f"File '{path.name}' not allowed. Allowed extensions/names: {allowed}"
 
     return path, None
 
 
 mcp = FastMCP(
     "tension-detect",
-    version="0.1.0",
     instructions=(
         "Detect contradictions in AI rules (CLAUDE.md, Cursor Rules, etc.) "
         "and help the user define judgment boundaries. "
