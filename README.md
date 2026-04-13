@@ -1,5 +1,7 @@
 # tension-detect
 
+<!-- mcp-name: io.github.zunoworks/tension-detect -->
+
 Your CLAUDE.md says "Ship fast" AND "Plan before coding." Which one wins?
 
 **tension-detect finds the contradictions and tells you when each rule applies.**
