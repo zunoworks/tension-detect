@@ -19,7 +19,7 @@ class Rule:
 _BACKTICK_RE = re.compile(r"`[^`]+`")
 # Bold/italic markers
 _MD_EMPHASIS_RE = re.compile(r"\*{1,3}|_{1,3}")
-# HTML comments (e.g. <!-- CORREX:NARRATIVE:END -->)
+# HTML comments
 _HTML_COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
 # Max rule length — longer text is a description, not a rule
 _MAX_RULE_LEN = 200

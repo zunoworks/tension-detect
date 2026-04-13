@@ -1,4 +1,4 @@
-"""Contradiction detection engine. Ported from CORREX with English support."""
+"""Contradiction detection engine. Bilingual (English + Japanese)."""
 
 from __future__ import annotations
 
