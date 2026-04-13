@@ -27,13 +27,18 @@ def _validate_file_path(file_path: str) -> tuple[Path | None, str | None]:
 
     Returns (resolved_path, None) on success, (None, error_msg) on failure.
     """
-    raw = Path(file_path).expanduser()
+    try:
+        raw = Path(file_path).expanduser()
+    except (ValueError, OSError):
+        return None, f"Invalid file path: {file_path!r}"
 
     # Check symlink BEFORE resolve (resolve follows symlinks)
-    if raw.is_symlink():
-        return None, "Symlinks are not allowed for security reasons."
-
-    path = raw.resolve()
+    try:
+        if raw.is_symlink():
+            return None, "Symlinks are not allowed for security reasons."
+        path = raw.resolve()
+    except (ValueError, OSError):
+        return None, f"Cannot resolve path: {file_path!r}"
 
     if path.name not in _ALLOWED_FILENAMES and path.suffix.lower() not in _ALLOWED_EXTENSIONS:
         allowed = ", ".join(sorted(_ALLOWED_EXTENSIONS | _ALLOWED_FILENAMES))
