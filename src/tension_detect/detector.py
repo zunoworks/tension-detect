@@ -30,26 +30,95 @@ _JA_PATTERNS: dict[str, re.Pattern[str]] = {
 }
 
 _EN_PATTERNS: dict[str, re.Pattern[str]] = {
-    "confirm": re.compile(r"verify|check first|confirm|ask before|review before|get approval", re.I),
-    "execute": re.compile(r"immediately|ship it|act fast|just do|move quickly|don.t wait", re.I),
-    "preserve": re.compile(r"don.t break|maintain|keep existing|preserve|backward.?compat|stable", re.I),
-    "change": re.compile(r"improve|refactor|modernize|upgrade|simplify|clean up", re.I),
-    "wait": re.compile(r"before you|first,?\s|plan before|think before|don.t rush|step back", re.I),
-    "act": re.compile(r"bias for action|move fast|ship|don.t overthink|just start|stop planning", re.I),
-    "part": re.compile(r"small pr|incremental|one thing|focused|atomic|narrow scope", re.I),
-    "whole": re.compile(r"big picture|holistic|end.to.end|full context|consider everything", re.I),
+    "confirm": re.compile(
+        r"verify|check\b.*\bfirst|confirm|ask before|review\b.*\bbefore|get approval|"
+        r"validate|ensure|make sure|double.check|sign.off|test\b.*\bbefore|"
+        r"review\s+(carefully|thoroughly)|comprehensive\w*\s+(test|review|check)",
+        re.I,
+    ),
+    "execute": re.compile(
+        r"immediately|ship it|act fast|just do|move quickly|don.t wait|"
+        r"execute\b|run it|deploy\b|push\b.*\b(now|fast)|without delay",
+        re.I,
+    ),
+    "preserve": re.compile(
+        r"don.t break|maintain|keep existing|preserve|backward.?compat|stable|"
+        r"stability|established|convention|conservative|avoid\b.*\bchang|"
+        r"respect existing|don.t touch|leave\b.*\balone|proven",
+        re.I,
+    ),
+    "change": re.compile(
+        r"improve|refactor|modernize|upgrade|simplify|clean up|"
+        r"embrace\b.*\bchang|innovate|replace|adopt\b|rethink|rewrite|"
+        r"breaking change|overhaul|revamp",
+        re.I,
+    ),
+    "wait": re.compile(
+        r"before you|plan\b.*\b(before|first)|think before|don.t rush|step back|"
+        r"first\b|understand\b.*\bbefore|measure\b.*\btwice|read\b.*\bfirst|"
+        r"carefully|thorough|deliberate|take\s+time|slow down",
+        re.I,
+    ),
+    "act": re.compile(
+        r"bias for action|move fast|ship\b|don.t overthink|just start|stop planning|"
+        r"get it done|iterate|launch|prototype\b.*\bfast|deliver|good enough|"
+        r"quickly|speed|rapid|fast\b|velocity|don.t wait",
+        re.I,
+    ),
+    "part": re.compile(
+        r"small pr|incremental|one thing|focused|atomic|narrow scope|"
+        r"small\b.*\b(step|change|piece)|minimal|least|single\s+responsib|"
+        r"one\s+at\s+a\s+time|isolated",
+        re.I,
+    ),
+    "whole": re.compile(
+        r"big picture|holistic|end.to.end|full context|consider everything|"
+        r"full\s+\w+|overall|system.wide|architect|comprehensive|"
+        r"broad|entire|complete\s+picture",
+        re.I,
+    ),
 }
+
+# Negation patterns that invert direction
+_NEGATION_RE = re.compile(
+    r"\b(don.t|do\s+not|never|stop\s|no\b|shouldn.t|can.t|won.t|"
+    r"without|avoid|not\b)\b",
+    re.I,
+)
+
+# Map each direction to its opposite for negation inversion
+_DIRECTION_OPPOSITE: dict[str, str] = {}
+for _a, _b in OPPOSITE_DIRECTIONS:
+    _DIRECTION_OPPOSITE[_a] = _b
+    _DIRECTION_OPPOSITE[_b] = _a
 
 
 def classify_directions(text: str) -> set[str]:
-    """Classify a rule text into action direction tags."""
+    """Classify a rule text into action direction tags.
+
+    Handles negation: "Don't ship" -> wait (not act).
+    """
     directions: set[str] = set()
+
+    # Japanese patterns (negation is baked into the patterns)
     for tag, pat in _JA_PATTERNS.items():
         if pat.search(text):
             directions.add(tag)
+
+    # English patterns with negation detection
     for tag, pat in _EN_PATTERNS.items():
-        if pat.search(text):
+        match = pat.search(text)
+        if not match:
+            continue
+
+        # Check if a negation word appears within 30 chars before the match
+        start = max(0, match.start() - 30)
+        prefix = text[start:match.start()]
+        if _NEGATION_RE.search(prefix) and tag in _DIRECTION_OPPOSITE:
+            directions.add(_DIRECTION_OPPOSITE[tag])
+        else:
             directions.add(tag)
+
     return directions
 
 
@@ -94,6 +163,10 @@ _EN_STOP = {
     "run", "dev", "npm", "pip", "git", "node", "python",
     "desktop", "users", "home", "documents",
     "cd", "mkdir", "echo", "cat", "grep", "sed",
+    # Contractions (carry no topic-specific meaning)
+    "shouldn't", "can't", "won't", "couldn't", "wouldn't",
+    "isn't", "aren't", "wasn't", "weren't", "hasn't",
+    "haven't", "hadn't", "doesn't", "didn't",
 }
 
 # Markdown/formatting noise to strip before keyword extraction

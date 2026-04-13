@@ -1,4 +1,4 @@
-"""Allow running as: python -m tension_detect.server"""
+"""Allow running as: python -m tension_detect"""
 
 from .server import mcp
 

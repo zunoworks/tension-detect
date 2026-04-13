@@ -21,6 +21,14 @@ _BACKTICK_RE = re.compile(r"`[^`]+`")
 _MD_EMPHASIS_RE = re.compile(r"\*{1,3}|_{1,3}")
 # HTML comments
 _HTML_COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
+# HTML tags (<br>, <strong>, <a href>, etc.)
+_HTML_TAG_RE = re.compile(r"<[^>]+>")
+# Blockquote prefix
+_BLOCKQUOTE_RE = re.compile(r"^>\s*")
+# Checkbox markers (- [ ] or - [x])
+_CHECKBOX_RE = re.compile(r"^\[[ xX]\]\s*")
+# Control characters (null bytes etc.)
+_CONTROL_RE = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f]")
 # Max rule length — longer text is a description, not a rule
 _MAX_RULE_LEN = 200
 # Lines that are commands, paths, config, or code — not rules
@@ -38,10 +46,14 @@ _NON_RULE_RE = re.compile(
 
 
 def _clean_rule_text(text: str) -> str:
-    """Strip markdown formatting and HTML comments from rule text."""
+    """Strip markdown formatting, HTML, and control chars from rule text."""
+    text = _CONTROL_RE.sub("", text)
     text = _HTML_COMMENT_RE.sub("", text)
+    text = _HTML_TAG_RE.sub("", text)
     text = _BACKTICK_RE.sub("", text)
     text = _MD_EMPHASIS_RE.sub("", text)
+    text = _BLOCKQUOTE_RE.sub("", text)
+    text = _CHECKBOX_RE.sub("", text)
     return text.strip()
 
 

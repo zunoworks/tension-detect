@@ -3,9 +3,8 @@
 from __future__ import annotations
 
 import json
-import os
 import sys
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, asdict, fields
 from datetime import datetime
 from pathlib import Path
 
@@ -30,7 +29,7 @@ class Tension:
             self.created_at = datetime.now().strftime("%Y-%m-%d %H:%M")
 
 
-_TENSION_FIELDS = {f.name for f in __import__("dataclasses").fields(Tension)}
+_TENSION_FIELDS = {f.name for f in fields(Tension)}
 
 
 def load_tensions() -> list[Tension]:

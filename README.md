@@ -40,7 +40,7 @@ pip install tension-detect
 Register once:
 
 ```bash
-claude mcp add tension-detect -- python -m tension_detect.server
+claude mcp add tension-detect -- python -m tension_detect
 ```
 
 Then just ask:
@@ -125,6 +125,10 @@ Because both rules are right.
 A chef who only knows "add salt" is bad. A chef who only knows "less salt" is also bad. A chef who knows **when** to do which is a professional.
 
 tension-detect teaches your AI when to do which.
+
+## Data Storage
+
+Saved tensions are stored in `~/.tension-detect/tensions.json`. Delete this directory to reset.
 
 ## License
 
