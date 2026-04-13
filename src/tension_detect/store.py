@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import fcntl
 import json
 from dataclasses import dataclass, asdict
 from datetime import datetime
@@ -52,10 +53,16 @@ def load_tensions() -> list[Tension]:
 
 def save_tension(tension: Tension) -> str:
     STORE_DIR.mkdir(parents=True, exist_ok=True)
-    tensions = load_tensions()
-    tensions.append(tension)
-    TENSIONS_FILE.write_text(
-        json.dumps([asdict(t) for t in tensions], ensure_ascii=False, indent=2),
-        encoding="utf-8",
-    )
+    lock_file = STORE_DIR / ".lock"
+    with open(lock_file, "w") as lf:
+        fcntl.flock(lf, fcntl.LOCK_EX)
+        try:
+            tensions = load_tensions()
+            tensions.append(tension)
+            TENSIONS_FILE.write_text(
+                json.dumps([asdict(t) for t in tensions], ensure_ascii=False, indent=2),
+                encoding="utf-8",
+            )
+        finally:
+            fcntl.flock(lf, fcntl.LOCK_UN)
     return tension.id

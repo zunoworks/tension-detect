@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from pathlib import Path
+from uuid import uuid4
 
 from mcp.server.fastmcp import FastMCP
 
@@ -25,10 +26,13 @@ def _validate_file_path(file_path: str) -> tuple[Path | None, str | None]:
 
     Returns (resolved_path, None) on success, (None, error_msg) on failure.
     """
-    path = Path(file_path).expanduser().resolve()
+    raw = Path(file_path).expanduser()
 
-    if path.is_symlink():
+    # Check symlink BEFORE resolve (resolve follows symlinks)
+    if raw.is_symlink():
         return None, "Symlinks are not allowed for security reasons."
+
+    path = raw.resolve()
 
     if path.suffix.lower() not in _ALLOWED_EXTENSIONS:
         allowed = ", ".join(sorted(_ALLOWED_EXTENSIONS))
@@ -123,7 +127,7 @@ def save_tension_tool(
     - boundary: When to apply rule A vs rule B
     - signal: What observable cue triggers the switch
     """
-    tension_id = f"tension-{datetime.now().strftime('%Y%m%d%H%M%S')}"
+    tension_id = f"tension-{datetime.now().strftime('%Y%m%d%H%M%S')}-{uuid4().hex[:6]}"
     t = Tension(
         id=tension_id,
         rule_a_text=rule_a_text,
