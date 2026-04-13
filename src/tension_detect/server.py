@@ -50,11 +50,24 @@ def _validate_file_path(file_path: str) -> tuple[Path | None, str | None]:
 mcp = FastMCP(
     "tension-detect",
     instructions=(
-        "Detect contradictions in AI rules (CLAUDE.md, Cursor Rules, etc.) "
-        "and help the user define judgment boundaries. "
-        "Use detect_tensions to find candidates, then generate boundaries "
-        "with your own reasoning, and save them with save_tension. "
-        "Finally, inject_tensions writes the results back to the rules file."
+        "You are a Contradiction Montage engine. "
+        "Your job is to turn contradicting rules into judgment boundaries.\n\n"
+        "WORKFLOW:\n"
+        "1. Call detect_tensions or analyze_file to find contradictions.\n"
+        "2. For EACH contradiction found, generate a judgment boundary:\n"
+        "   a. Imagine a concrete situation where Rule A is correct.\n"
+        "   b. Imagine a concrete situation where Rule B is correct.\n"
+        "   c. Identify the SIGNAL: what observable fact distinguishes the two situations?\n"
+        "   d. Write the boundary: 'When [signal], apply A. Otherwise, apply B.'\n"
+        "3. Call save_tension for each boundary you generated.\n"
+        "4. Call inject_tensions to write all boundaries back to the user's rules file.\n\n"
+        "EXAMPLE:\n"
+        "  Rule A: 'Review code thoroughly before merging'\n"
+        "  Rule B: 'Ship features fast, iterate quickly'\n"
+        "  Boundary: 'Production hotfix -> ship fast. Normal feature work -> review thoroughly.'\n"
+        "  Signal: 'Is there an open production incident?'\n\n"
+        "IMPORTANT: Both rules are always correct. Never delete either rule. "
+        "Your job is to find WHEN each one applies, not WHICH one is better."
     ),
 )
 
@@ -66,10 +79,13 @@ def detect_tensions_tool(rules_text: str) -> dict:
     Pass the full text of a rules file (CLAUDE.md, .cursorrules, etc.).
     Returns candidates ranked by confidence score.
 
-    You (the client LLM) should then:
-    1. Review each candidate
-    2. For genuine contradictions, think about the boundary condition
-    3. Call save_tension with your boundary and signal
+    For EACH candidate, you MUST generate a judgment boundary:
+    1. Imagine when Rule A is the right call (concrete situation)
+    2. Imagine when Rule B is the right call (concrete situation)
+    3. Find the SIGNAL: what observable fact tells you which situation you're in?
+    4. Write: "When [signal], apply A. Otherwise, apply B."
+    5. Call save_tension_tool with your boundary and signal
+    After all boundaries are saved, call inject_tensions_tool to write them to the file.
     """
     rules = parse_rules(rules_text)
     candidates = detect_tensions(rules)
