@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-import fcntl
 import json
+import os
+import sys
 from dataclasses import dataclass, asdict
 from datetime import datetime
 from pathlib import Path
@@ -51,11 +52,31 @@ def load_tensions() -> list[Tension]:
         return []
 
 
+def _lock_file(f):  # type: ignore[no-untyped-def]
+    """Cross-platform exclusive file lock."""
+    if sys.platform == "win32":
+        import msvcrt
+        msvcrt.locking(f.fileno(), msvcrt.LK_LOCK, 1)
+    else:
+        import fcntl
+        fcntl.flock(f, fcntl.LOCK_EX)
+
+
+def _unlock_file(f):  # type: ignore[no-untyped-def]
+    """Cross-platform file unlock."""
+    if sys.platform == "win32":
+        import msvcrt
+        msvcrt.locking(f.fileno(), msvcrt.LK_UNLCK, 1)
+    else:
+        import fcntl
+        fcntl.flock(f, fcntl.LOCK_UN)
+
+
 def save_tension(tension: Tension) -> str:
     STORE_DIR.mkdir(parents=True, exist_ok=True)
     lock_file = STORE_DIR / ".lock"
     with open(lock_file, "w") as lf:
-        fcntl.flock(lf, fcntl.LOCK_EX)
+        _lock_file(lf)
         try:
             tensions = load_tensions()
             tensions.append(tension)
@@ -64,5 +85,5 @@ def save_tension(tension: Tension) -> str:
                 encoding="utf-8",
             )
         finally:
-            fcntl.flock(lf, fcntl.LOCK_UN)
+            _unlock_file(lf)
     return tension.id
